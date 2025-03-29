@@ -8,14 +8,14 @@ import isAuthenticated from '../middleware/Authentication.js';
 const router = express.Router();
 
 // Create a new user
-router.post('/', createUser);
+router.post('/', isAuthenticated, createUser);
 // Get all users
 router.get('/', isAuthenticated, getAllUsers);
 // Get a user by ID
-router.get('/:id', getUserById);
+router.get('/:id', isAuthenticated, getUserById);
 // Update a user by ID
-router.put('/:id', updateUserById);
+router.put('/:id', isAuthenticated, updateUserById);
 // Delete a user by ID
-router.delete('/:id', deleteUserById);
+router.delete('/:id', isAuthenticated, deleteUserById);
 
 export default router;
