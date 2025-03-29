@@ -11,7 +11,11 @@ const hashPassword = async (password) => {
 };
 
 const generateToken = (userId) => {
-    return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+};
+
+const generateRefreshToken = (userId) => {
+    return jwt.sign({ userId }, process.env.JWT_REFRESH_SECRET, { expiresIn: '1d' });
 };
 
 export const seedAdmin = async () => {
@@ -38,6 +42,51 @@ export const seedAdmin = async () => {
         console.error('Error seeding admin user:', error);
     }
 };
+
+export const refreshAccessToken = async (req, res, next) => {
+    try {
+        // Get the refresh token from the request body
+        const { refreshToken } = req.body;
+        if (!refreshToken) {
+            throw new RequestError('No refresh token provided.', 401);
+        }
+
+        // Check if the refresh token is blacklisted
+        // This should be done in a more efficient way, e.g., using Redis or similar
+        const isBlacklisted = await TokenBlacklist.findOne({ token: refreshToken });
+        if (isBlacklisted) {
+            throw new RequestError('Refresh token is blacklisted.', 401);
+        }
+
+         // Verify the refresh token
+         const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+         const user = await User.findById(decoded.userId);
+         if (!user) {
+             throw new RequestError('User not found.', 401);
+         }
+
+        // Generate a new access token
+        const newAccessToken = generateToken(user._id);
+        // Generate a new refresh token
+        const newRefreshToken = generateRefreshToken(user._id);
+
+        // Blacklist the old refresh token
+        const expirationDate = new Date(decoded.exp * 1000);
+        await TokenBlacklist.create({ token: refreshToken, expiresAt: expirationDate });
+
+        // Set the new refresh token in an HttpOnly cookie
+        // Please investigate this will work and only include when you understand it
+        // res.cookie('refreshToken', newRefreshToken, {
+        //     httpOnly: true,
+        //     secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        //     sameSite: 'Strict',
+        // });
+        
+        res.status(200).json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
+    } catch(error) {
+        next(error);
+    }
+}
 
 export const signup = async (req, res, next) => {
     try {
@@ -91,9 +140,10 @@ export const login = async (req, res, next) => {
             throw new RequestError('Invalid email or password.', 401);
         }
 
-        const token = generateToken(user._id);
+        const accessToken = generateToken(user._id);
+        const refreshToken = generateRefreshToken(user._id);
 
-        res.status(200).json({ token });
+        res.status(200).json({ accessToken, refreshToken });
     } catch (error) {
         next(error);
     }
@@ -101,20 +151,40 @@ export const login = async (req, res, next) => {
 
 
 // Token blacklisting should be eventually implemented with redis or similar
-export const logout = async (req, res) => {
+export const logout = async (req, res, next) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) {
+        const accessToken = req.headers.authorization?.split(' ')[1];
+        const refreshToken = req.body?.refreshToken;
+
+        if (!accessToken) {
             throw new RequestError('No token provided.', 401);
         }
 
-        const decoded = jwt.decode(token);
-        if(!decoded || !decoded.exp) {
+        // decode access token to get userId
+        const decodedAccessToken = jwt.decode(accessToken);
+        if(!decodedAccessToken || !decodedAccessToken.exp) {
             throw new RequestError('Invalid token.', 400);
         }
 
-        const expirationDate = new Date(decoded.exp * 1000);
-        await TokenBlacklist.create({ token, expiresAt: expirationDate });
+        // blacklist the access token
+        const expirationDate = new Date(decodedAccessToken.exp * 1000);
+        await TokenBlacklist.create({ token: accessToken, expiresAt: expirationDate });
+
+        //decode refresh token to get userId if the token is passed
+        if(!refreshToken) {
+            res.status(200).json({ message: 'Logged out successfully.' });
+            return;
+        }
+
+        // decode refresh token to get userId if it exists
+        const decodedRefreshToken = jwt.decode(refreshToken);
+        if (!decodedRefreshToken || !decodedRefreshToken.userId) {
+            throw new RequestError('Invalid refresh token.', 400);
+        }
+
+        // Blacklist the refresh token
+        const expirationDateRefresh = new Date(decodedRefreshToken.exp * 1000);
+        await TokenBlacklist.create({ token: refreshToken, expiresAt: expirationDateRefresh });
         
         res.status(200).json({ message: 'Logged out successfully.' });
     } catch(error) {

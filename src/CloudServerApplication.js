@@ -84,8 +84,6 @@ app.use(errorHandler);
 
 /**
  * TODO: For tomorrow:
- * - Add auth token refresh logic
- * - Add token invalidation logic
  * - Add role routes and controller
  * - Populate request with user and his role
  * - Add authorization middleware
