@@ -1,5 +1,4 @@
 import Role from '../Role.js';
-import User from '../User.js';
 import { seedAdmin } from '../../controllers/AuthController.js';
 import roles from './RoleSeed.js';
 

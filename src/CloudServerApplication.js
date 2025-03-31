@@ -85,11 +85,5 @@ app.use('/roles', roleRoutes);
 app.use(errorHandler);
 
 /**
- * TODO: For tomorrow:
- * - Add Course routes, controller and model
- * - Add Lecture routes, controller and model
- * - Add video file uploads to S3
- * - Add subscription routes, controller and model
- * - Add payment routes, controller and model
- * - Add payment gateway
+ * TODO:
  */
