@@ -58,6 +58,11 @@ export const deleteRole = async (req, res) => {
         if (!role) {
             return res.status(404).json({ message: "Role not found" });
         }
+
+        if(role.name === 'admin') {
+            return res.status(400).json({ message: "Cannot delete admin role" });
+        }
+        
         res.status(200).json({ message: "Role deleted successfully" });
     } catch (error) {
         res.status(500).json({ message: error.message });
