@@ -143,7 +143,7 @@ export const login = async (req, res, next) => {
         const accessToken = generateToken(user._id);
         const refreshToken = generateRefreshToken(user._id);
 
-        res.status(200).json({ accessToken, refreshToken });
+        res.status(200).json({ user, accessToken, refreshToken });
     } catch (error) {
         next(error);
     }

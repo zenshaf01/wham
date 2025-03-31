@@ -17,6 +17,7 @@ import seedData from './models/seeds/seeder.js';
 //Routes
 import userRoutes from './routes/UserRoutes.js';
 import authRoutes from './routes/AuthRoutes.js';
+import roleRoutes from './routes/RoleRoutes.js';
 
 // Load environment variables from .env file
 dotenv.config()
@@ -76,17 +77,15 @@ const startApplication = async () => {
 startApplication();
 
 // Register routes
-app.use('/users', userRoutes);
 app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/roles', roleRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
 
 /**
  * TODO: For tomorrow:
- * - Add role routes and controller
- * - Populate request with user and his role
- * - Add authorization middleware
  * - Add Course routes, controller and model
  * - Add Lecture routes, controller and model
  * - Add video file uploads to S3
