@@ -15,6 +15,7 @@ import { asciiArt } from './helpers/Utilities.js';
 import seedData from './models/seeds/seeder.js';
 
 //Routes
+import healthCheckRoute from './routes/HealthCheckRoute.js';
 import userRoutes from './routes/UserRoutes.js';
 import authRoutes from './routes/AuthRoutes.js';
 import roleRoutes from './routes/RoleRoutes.js';
@@ -77,6 +78,7 @@ const startApplication = async () => {
 startApplication();
 
 // Register routes
+app.use('/health-check', healthCheckRoute);
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/roles', roleRoutes);
